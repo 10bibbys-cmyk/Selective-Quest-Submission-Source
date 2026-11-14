@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "dev.selectivequestsubmission.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "TaskSequenceInvoker",
+    "SubmitTaskMessageMixin"
+  ],
+  "client": [
+    "ItemTaskButtonMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

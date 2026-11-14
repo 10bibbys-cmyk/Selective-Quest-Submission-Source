@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "selective_quest_submission",
+  "version": "1.0.0-rc.1",
+  "name": "Selective Quest Submission",
+  "description": "Choose exactly which matching inventory items to submit to consuming FTB Quests item tasks. Supports existing FTB Quests item matching and Item Filters tags.",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.selectivequestsubmission.QuestSubmissionMod"
+    ]
+  },
+  "mixins": [
+    "selective_quest_submission.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": "1.20.1",
+    "java": ">=17",
+    "fabric-api": "*",
+    "ftbquests": "2001.4.22",
+    "ftblibrary": "2001.2.13"
+  }
+}

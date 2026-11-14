@@ -1,0 +1,75 @@
+plugins {
+    id 'fabric-loom' version '1.7.4'
+    id 'maven-publish'
+}
+version = '1.0.0-rc.1'
+group = 'dev.selectivequestsubmission'
+base { archivesName = 'selective-quest-submission' }
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://maven.ftb.dev/releases/' }
+    maven { url = 'https://maven.architectury.dev/' }
+}
+
+import java.util.zip.ZipFile
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
+// The published binary uses intermediary Minecraft class and method names.
+// Retain that namespace while compiling the recovered original logic.
+configurations { recoveryYarnMappings }
+dependencies {
+    recoveryYarnMappings 'net.fabricmc:yarn:1.20.1+build.10:v2'
+}
+def recoveryMappingJar = file("$buildDir/recovery-mappings/intermediary-named.jar")
+recoveryMappingJar.parentFile.mkdirs()
+def yarnMappingJar = configurations.recoveryYarnMappings.singleFile
+new ZipFile(yarnMappingJar).withCloseable { sourceZip ->
+    def tiny = sourceZip.getEntry('mappings/mappings.tiny')
+    if (tiny == null) throw new GradleException('Yarn archive missing mappings/mappings.tiny')
+    def mappingText = sourceZip.getInputStream(tiny).getText('UTF-8')
+    def lines = mappingText.split('\n', -1).collect { line ->
+        def parts = line.split('\t', -1)
+        if (line.startsWith('c\t') || line.startsWith('\tf\t') || line.startsWith('\tm\t')) {
+            parts[parts.length - 1] = parts[parts.length - 2]
+        }
+        parts.join('\t')
+    }
+    new ZipOutputStream(new FileOutputStream(recoveryMappingJar)).withCloseable { output ->
+        output.putNextEntry(new ZipEntry('mappings/mappings.tiny'))
+        output.write(lines.join('\n').getBytes('UTF-8'))
+        output.closeEntry()
+    }
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.20.1'
+    mappings files(recoveryMappingJar)
+    modImplementation 'net.fabricmc:fabric-loader:0.16.14'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.92.2+1.20.1'
+    modImplementation 'dev.ftb.mods:ftb-library-fabric:2001.2.13'
+    modImplementation 'dev.ftb.mods:ftb-quests-fabric:2001.4.22'
+    modImplementation 'dev.ftb.mods:ftb-teams-fabric:2001.3.0'
+    modImplementation 'dev.architectury:architectury-fabric:9.2.14'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+tasks.named('jar') {
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
+}
+tasks.named('sourcesJar') {
+    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
+}
